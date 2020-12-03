@@ -1,4 +1,4 @@
-from binance.client import Client
+from test.binance import Client
 import json
 
 MARKET = 'BTCUSDT'

@@ -1,17 +1,20 @@
 from binance.client import Client
+import traceback
 import time
 import datetime
 import tulipy as ti
 import numpy as np
+import math
 
 MARKET = 'BTCUSDT'
 ASSET = 'USDT'
-API_KEY = 'nloqXskw8UQPIzEt6TvkZXIlac45y3TUa92Wjotj9WhLaoGTqhZmvAxS2M09ginV'
-API_SECRET = 'YyQVnIGVILPjkp4lBTEFipO83E80K6dYLaIZ3TCOI5oUmjXyfVwQ6tl9gcqP5Gt6'
+API_KEY = ''
+API_SECRET = ''
 AMOUNT = 10
 AMOUNT_NOW = AMOUNT
 LOSE = 0
 DISTANCE = 0.01
+LEVERAGE = 100
 POSITION = {
     'price': 0,
     'side': '',
@@ -65,6 +68,21 @@ class BinanceClient(Client):
 client = BinanceClient(API_KEY, API_SECRET)
 
 
+def round_decimals_down(number: float, decimals: int = 2):
+    """
+    Returns a value rounded down to a specific number of decimal places.
+    """
+    if not isinstance(decimals, int):
+        raise TypeError("decimal places must be an integer")
+    elif decimals < 0:
+        raise ValueError("decimal places has to be 0 or more")
+    elif decimals == 0:
+        return math.floor(number)
+
+    factor = 10 ** decimals
+    return math.floor(number * factor) / factor
+
+
 def place_win_order():
     AMOUNT_TO_SPOT = POSITION['amount'] - AMOUNT
     client.transfer_futures_to_spot(asset=ASSET, amount=AMOUNT_TO_SPOT)
@@ -90,18 +108,29 @@ def reset_martingale():
 
 
 def create_position(**params):
+    print(params['date'], 'CREATE POSITION')
     global POSITION
+    ticker = client.futures_ticker(symbol=MARKET)
     if params['side'] == Client.SIDE_BUY:
         stopPrice = params['price'] * (1 + DISTANCE)
     else:
         stopPrice = params['price'] * (1 - DISTANCE)
+    quantity = round_decimals_down((AMOUNT_NOW / ticker['lastPrice']) * calculate_leverage(), 3)
     order = client.futures_create_order(symbol=MARKET,
                                         side=params['side'],
-                                        type=Client.ORDER_TYPE_TAKE_PROFIT_MARKET,
-                                        quantity=AMOUNT_NOW * 100,
-                                        stopPrice=stopPrice)
+                                        type=BinanceClient.ORDER_TYPE_MARKET,
+                                        quantity=quantity)
+    sideTakeProfit = BinanceClient.SIDE_BUY
+    if BinanceClient.SIDE_BUY == params['side']:
+        sideTakeProfit = BinanceClient.SIDE_SELL
+    client.futures_create_order(symbol=MARKET,
+                                side=sideTakeProfit,
+                                type=BinanceClient.ORDER_TYPE_TAKE_PROFIT_MARKET,
+                                quantity=quantity,
+                                stopPrice=format(stopPrice, '.2f'))
     params['orderId'] = order['orderId']
     params['amount'] = AMOUNT_NOW * 100
+    params['roe'] = 0
     POSITION = params
 
 
@@ -115,6 +144,10 @@ def reset_position():
         'roe': 0,
         'amount': 0
     }
+
+
+def calculate_leverage():
+    return (LEVERAGE / DISTANCE) / 100
 
 
 def is_close_position():
@@ -148,27 +181,31 @@ def start():
         #     "28.46694368",      // Taker buy quote asset volume
         #     "17928899.62484339" // Ignore
         # ]
-        now = datetime.datetime.now()
-        is_close_position()
-        if (now.minute == 0 and now.second == 0) or (now.minute == 30 and now.second == 0):
-            print(now, 'UPDATE DATA OHLC')
-            ohlc = client.futures_klines(symbol=MARKET, interval=Client.KLINE_INTERVAL_30MINUTE)
-            close = []
-            for row in ohlc:
-                close.append(float(row[4]))
-            ma1 = ti.sma(np.array(close), period=10)
-            ma2 = ti.sma(np.array(close), period=20)
-            if POSITION['price'] == 0:
-                if ti.crossover(ma1, ma2)[0]:
-                    create_position(price=row['close'], side=Client.SIDE_BUY, date=now)
-                elif ti.crossover(ma2, ma1)[0]:
-                    create_position(price=row['close'], side=Client.SIDE_SELL, date=now)
+        try:
+            now = datetime.datetime.now()
+            is_close_position()
+            if (now.minute == 0 and now.second == 0) or (now.minute == 30 and now.second == 0):
+                print(now, 'UPDATE DATA OHLC')
+                ohlc = client.futures_klines(symbol=MARKET, interval=Client.KLINE_INTERVAL_30MINUTE)
+                close = []
+                for row in ohlc:
+                    close.append(float(row[4]))
+                ma1 = ti.sma(np.array(close), period=10)
+                ma2 = ti.sma(np.array(close), period=20)
+                if POSITION['price'] == 0:
+                    if ti.crossover(ma1, ma2)[0]:
+                        create_position(price=float(row[4]), side=Client.SIDE_BUY, date=now)
+                    elif ti.crossover(ma2, ma1)[0]:
+                        create_position(price=float(row[4]), side=Client.SIDE_SELL, date=now)
 
-        print(now, 'GET POSITION ENTRY_PRICE[{}] ROE[{}] AMOUNT[{}] SIDE[{}]'.format(POSITION['price'],
-                                                                                     POSITION['roe'],
-                                                                                     POSITION['amount'],
-                                                                                     POSITION['side']))
-        time.sleep(1)
+            print(now, 'GET POSITION ENTRY_PRICE[{}] ROE[{}] AMOUNT[{}] SIDE[{}]'.format(POSITION['price'],
+                                                                                         POSITION['roe'],
+                                                                                         POSITION['amount'],
+                                                                                         POSITION['side']))
+            time.sleep(1)
+
+        except:
+            traceback.print_exc()
 
 
 start()

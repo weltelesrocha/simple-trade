@@ -1,4 +1,4 @@
-from binance.client import Client
+from test.binance import Client
 
 
 class BinanceClient(Client):
