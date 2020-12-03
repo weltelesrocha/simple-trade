@@ -84,7 +84,10 @@ def round_decimals_down(number: float, decimals: int = 2):
 
 
 def place_win_order():
-    AMOUNT_TO_SPOT = POSITION['amount'] - AMOUNT
+    # PEGA O BALANCE
+    AMOUNT_TO_SPOT = AMOUNT
+    if POSITION['amount'] > AMOUNT:
+        AMOUNT_TO_SPOT = POSITION['amount'] - AMOUNT
     client.transfer_futures_to_spot(asset=ASSET, amount=AMOUNT_TO_SPOT)
     reset_position()
 
@@ -129,7 +132,7 @@ def create_position(**params):
                                 quantity=quantity,
                                 stopPrice=format(stopPrice, '.2f'))
     params['orderId'] = order['orderId']
-    params['amount'] = AMOUNT_NOW * 100
+    params['amount'] = AMOUNT_NOW
     params['roe'] = 0
     POSITION = params
 
