@@ -1,7 +1,7 @@
 import pandas
 import tulipy as ti
 import numpy as np
-binance_data = pandas.read_csv('data/binance-btc-usd.csv')
+binance_data = pandas.read_csv('data/binance-btc-usd-2020.csv')
 CLOSE = []
 POSITION = {
     'price': 0,
@@ -14,7 +14,7 @@ MARTINGALE = 0
 MAX_MARTINGALE = 0
 MAX_AMOUNT = 0
 DISTANCE = 0.01
-AMOUNT = 20
+AMOUNT = 100
 AMOUNT_NOW = AMOUNT
 LOSE = 0
 WINS = 0

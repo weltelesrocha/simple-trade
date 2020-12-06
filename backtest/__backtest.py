@@ -4,7 +4,7 @@ import pandas
 from backtesting.test import SMA, GOOG
 
 
-# binance_data = pandas.read_csv('test/data/binance-btc-usd.csv')
+# binance_data = pandas.read_csv('backtest/data/binance-btc-usd.csv')
 
 class SmaCross(Strategy):
     def init(self):

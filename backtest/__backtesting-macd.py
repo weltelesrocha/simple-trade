@@ -3,7 +3,7 @@ from backtesting.lib import crossover
 import pandas
 from backtesting.test import MACD, GOOG
 
-binance_data = pandas.read_csv('test/data/binance-btc-usd.csv')
+binance_data = pandas.read_csv('backtest/data/binance-btc-usd.csv')
 
 
 class MacdCross(Strategy):

@@ -8,8 +8,8 @@ import math
 
 MARKET = 'BTCUSDT'
 ASSET = 'USDT'
-API_KEY = ''
-API_SECRET = ''
+API_KEY = 'zTli0qrCrzcxmmuT5zJNNt7n1LBDqbkmBF3oXFvGysfCqpYAB7E2o2ybgawYRdeu'
+API_SECRET = 'eS63dbBsiJuo02eJgdjE4HaNw4fWuqTJ5K5pXJVtVUBDg9jCLEeB2WjLW1terSUX'
 AMOUNT = 10
 AMOUNT_NOW = AMOUNT
 LOSE = 0
@@ -118,7 +118,7 @@ def create_position(**params):
         stopPrice = params['price'] * (1 + DISTANCE)
     else:
         stopPrice = params['price'] * (1 - DISTANCE)
-    quantity = round_decimals_down((AMOUNT_NOW / ticker['lastPrice']) * calculate_leverage(), 3)
+    quantity = round_decimals_down((AMOUNT_NOW / float(ticker['lastPrice'])) * calculate_leverage(), 3)
     order = client.futures_create_order(symbol=MARKET,
                                         side=params['side'],
                                         type=BinanceClient.ORDER_TYPE_MARKET,
@@ -187,7 +187,7 @@ def start():
         try:
             now = datetime.datetime.now()
             is_close_position()
-            if (now.minute == 0 and now.second == 0) or (now.minute == 30 and now.second == 0):
+            if (now.minute == 0 and now.second == 0) or (now.minute == 30 and now.second == 10):
                 print(now, 'UPDATE DATA OHLC')
                 ohlc = client.futures_klines(symbol=MARKET, interval=Client.KLINE_INTERVAL_30MINUTE)
                 close = []
