@@ -1,6 +1,5 @@
 from client import BinanceClient
 from .simple_trade_helper import isset
-import datetime
 
 
 class SimpleTradeInterval:
@@ -18,8 +17,7 @@ class SimpleTradeInterval:
     def __init__(self, interval=None):
         self.interval = self.__INTERVAL[interval]
 
-    def is_update(self):
-        now = datetime.datetime.now()
+    def is_update(self, now):
         if isset(self.interval, 'second') and now.second % self.interval['second'] == 0:
             return True
         if isset(self.interval, 'minute') and now.minute % self.interval['minute'] == 0 and now.second == 0:

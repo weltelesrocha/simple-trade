@@ -1,4 +1,5 @@
 from binance.client import Client
+from decimal import Decimal
 
 
 class BinanceClient(Client):
@@ -47,3 +48,15 @@ class BinanceClient(Client):
 
         """
         return self._request_futures_api_v2('get', 'balance', True, data=params)
+
+    def delta_liquidation_price(self, side: str = None, wallet_balance: float = 0, position_size: float = 0, entry_price: float = 0):
+        """Calculate liquidation price"""
+        margin_rate = 0.004
+        cum_both = 0
+        tmm = 0
+        upnl = 0
+        side_position = -1
+        if side == BinanceClient.SIDE_BUY:
+            side_position = 1
+        delta_liquidate = (wallet_balance - tmm + upnl + cum_both - (side_position * position_size * entry_price)) / ((position_size * margin_rate) - (side_position * position_size))
+        return round(delta_liquidate, 2)

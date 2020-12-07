@@ -6,6 +6,6 @@ simple_trade_handler = SimpleTradeHandler(
         api_key='',
         api_secret=''
     ),
-    StrategySMA1020()
+    StrategySMA1020
 )
 simple_trade_handler.start()

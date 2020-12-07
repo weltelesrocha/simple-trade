@@ -1,6 +1,7 @@
 import pandas
 import tulipy as ti
 import numpy as np
+
 binance_data = pandas.read_csv('data/binance-btc-usd-2020.csv')
 CLOSE = []
 POSITION = {
@@ -14,7 +15,7 @@ MARTINGALE = 0
 MAX_MARTINGALE = 0
 MAX_AMOUNT = 0
 DISTANCE = 0.01
-AMOUNT = 100
+AMOUNT = 10
 AMOUNT_NOW = AMOUNT
 LOSE = 0
 WINS = 0
@@ -27,6 +28,23 @@ for index, row in binance_data.iterrows():
         'close': row.Close,
         'date': row.Date
     })
+
+
+def delta_liquidation_price(side: str = None,
+                            wallet_balance: float = 0,
+                            position_size: float = 0,
+                            entry_price: float = 0):
+    """Calculate liquidation price"""
+    margin_rate = 0.004
+    cum_both = 0
+    tmm = 0
+    upnl = 0
+    side_position = -1
+    if side == 'BUY':
+        side_position = 1
+    delta_liquidate = (wallet_balance - tmm + upnl + cum_both - (side_position * position_size * entry_price)) / (
+                (position_size * margin_rate) - (side_position * position_size))
+    return round(delta_liquidate, 2)
 
 
 def reset_position():
@@ -65,9 +83,10 @@ def is_close_position(ohlc):
     if POSITION['price'] == 0:
         return
     price = POSITION['price']
-    price_long = price * (1 + DISTANCE)
-    price_short = price * (1 - DISTANCE)
+    position_size = round(((AMOUNT_NOW / price) * 100), 3)
     if POSITION['side'] == "BUY":
+        price_long = price * (1 + DISTANCE)
+        price_short = delta_liquidation_price("BUY", AMOUNT_NOW, position_size, price)
         if ohlc['high'] >= price_long:
             TRADES.append({
                 'open': price,
@@ -95,6 +114,8 @@ def is_close_position(ohlc):
             martingale()
             LOSSES += 1
     else:
+        price_long = delta_liquidation_price("SELL", AMOUNT_NOW, position_size, price)
+        price_short = price * (1 - DISTANCE)
         if ohlc['low'] <= price_short:
             TRADES.append({
                 'open': price,

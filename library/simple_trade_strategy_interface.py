@@ -1,8 +1,8 @@
 class SimpleTradeStrategyInterface:
-    def __init__(self):
+    def __init__(self, handler):
         pass
 
-    def check_position(self):
+    def on_candle_update(self):
         """Load in the file for extracting text."""
         pass
     
