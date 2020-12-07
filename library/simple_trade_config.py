@@ -8,7 +8,7 @@ class SimpleTradeConfig:
             self,
             api_key=None,
             api_secret=None,
-            amount=1,
+            amount=10,
             distance=1,
             leverage=100,
             database_host: str = None,

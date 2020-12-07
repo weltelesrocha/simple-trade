@@ -1,4 +1,5 @@
-from library import SimpleTradeStrategyInterface, SimpleTradeConfig, SimpleTradeDatabase, SimpleTradeLog, SimpleTradeInterval
+from library import SimpleTradeStrategyInterface, SimpleTradeConfig, SimpleTradeDatabase, SimpleTradeLog, \
+    SimpleTradeInterval, SimpleTradeSide, SimpleTradeBeep
 from client.binance_client import BinanceClient
 from typing import Type
 import sys
@@ -9,9 +10,9 @@ import numpy as np
 
 class SimpleTradeHandler:
     def __init__(
-        self,
-        simple_trade_config: SimpleTradeConfig,
-        simple_trade_strategy: Type[SimpleTradeStrategyInterface]
+            self,
+            simple_trade_config: SimpleTradeConfig,
+            simple_trade_strategy: Type[SimpleTradeStrategyInterface]
     ):
         self.log = SimpleTradeLog(simple_trade_config.log_level)
         self.log.silly('Load log module')
@@ -38,6 +39,9 @@ class SimpleTradeHandler:
         self.candles = []
         self.position = {}
         self.close = []
+        self.amount = simple_trade_config.amount
+        self.amount_now = self.amount
+        self.lose = 0
 
     def balance_futures(self):
         balance = self.client.futures_account_balance()
@@ -86,9 +90,10 @@ class SimpleTradeHandler:
         self.candles = self.client.futures_klines(
             symbol="BTCUSDT",
             interval=self.config.interval_candle)
+        close = []
         for row in self.candles:
-            self.close.append(float(row[4]))
-        self.close = np.array(self.close)
+            close.append(float(row[4]))
+        self.close = np.array(close)
         self.log.silly('Updated Candles')
 
     def update_position(self):
@@ -97,6 +102,25 @@ class SimpleTradeHandler:
     def notification(self):
         if self.position is None:
             self.log.info('')
+
+    def create_position(self, side: str = None):
+        entry_price = self.last_price()
+        self.log.info(
+            'Creating {} position input value at {} quantity {}, market is {}'.format(side, entry_price, self.amount_now, self.config.market))
+        pass
+
+    def last_price(self):
+        return self.close[-1]
+
+    def buy(self):
+        self.create_position(SimpleTradeSide.BUY)
+
+    def sell(self):
+        self.create_position(SimpleTradeSide.SELL)
+
+    def martingale(self):
+        self.lose = self.lose + self.amount_now
+        self.amount_now = (self.lose / 2) + self.amount
 
     def listener(self):
         while True:

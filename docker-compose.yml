@@ -1,0 +1,13 @@
+version: '3'
+services:
+    python:
+        container_name: python
+        build: .
+        tty: true
+        volumes:
+            - ./:/code
+        networks:
+            - server_network
+networks:
+    server_network:
+        driver: bridge

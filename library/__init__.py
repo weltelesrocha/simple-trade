@@ -4,5 +4,7 @@ from .simple_trade_database import SimpleTradeDatabase
 from .simple_trade_log import SimpleTradeLog
 from .simple_trade_asset import SimpleTradeAsset
 from .simple_trade_interval import SimpleTradeInterval
+from .simple_trade_side import SimpleTradeSide
+from .simple_trade_beep import SimpleTradeBeep
 from .simple_trade_helper import *
 from .simple_trade_handler import SimpleTradeHandler

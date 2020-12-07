@@ -10,8 +10,12 @@ class StrategySMA1020:
         """Load in the file for extracting text."""
         ma1 = ti.sma(self.handler.close, period=10)
         ma2 = ti.sma(self.handler.close, period=20)
-        pass
+        # self.handler.buy()
+        if ti.crossover(ma1, ma2)[0]:
+            self.handler.buy()
+        elif ti.crossover(ma2, ma1)[0]:
+            self.handler.sell()
 
     def on_close_position(self):
         """On close position."""
-        pass
+        self.handler.martingale()
