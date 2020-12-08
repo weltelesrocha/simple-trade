@@ -127,7 +127,8 @@ class SimpleTradeHandler:
         self.amount_now = strategy.amount_now()
 
     def price_reset(self):
-
+        self.lose = 0
+        self.amount_now = self.amount
 
     def listener(self):
         while True:
