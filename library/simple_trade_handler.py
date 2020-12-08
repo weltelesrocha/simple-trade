@@ -1,7 +1,9 @@
-from library import SimpleTradeStrategyInterface, SimpleTradeConfig, SimpleTradeDatabase, SimpleTradeLog, \
-    SimpleTradeInterval, SimpleTradeSide, SimpleTradeBeep
+from .simple_trade_side import SimpleTradeSide
+from .simple_trade_interval import SimpleTradeInterval
+from .simple_trade_database import SimpleTradeDatabase
+from .simple_trade_log import SimpleTradeLog
+from .simple_trade_config import SimpleTradeConfig
 from client.binance_client import BinanceClient
-from typing import Type
 import sys
 import time
 import datetime
@@ -12,7 +14,7 @@ class SimpleTradeHandler:
     def __init__(
             self,
             simple_trade_config: SimpleTradeConfig,
-            simple_trade_strategy: Type[SimpleTradeStrategyInterface]
+            simple_trade_strategy
     ):
         self.log = SimpleTradeLog(simple_trade_config.log_level)
         self.log.silly('Load log module')
@@ -118,9 +120,14 @@ class SimpleTradeHandler:
     def sell(self):
         self.create_position(SimpleTradeSide.SELL)
 
-    def martingale(self):
-        self.lose = self.lose + self.amount_now
-        self.amount_now = (self.lose / 2) + self.amount
+    def price_strategy(self, price_strategy):
+        strategy = price_strategy(self)
+        strategy.calculate_price()
+        self.lose = strategy.lose()
+        self.amount_now = strategy.amount_now()
+
+    def price_reset(self):
+
 
     def listener(self):
         while True:

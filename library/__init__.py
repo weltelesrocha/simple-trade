@@ -1,5 +1,4 @@
 from .simple_trade_config import SimpleTradeConfig
-from .simple_trade_strategy_interface import SimpleTradeStrategyInterface
 from .simple_trade_database import SimpleTradeDatabase
 from .simple_trade_log import SimpleTradeLog
 from .simple_trade_asset import SimpleTradeAsset
@@ -8,3 +7,5 @@ from .simple_trade_side import SimpleTradeSide
 from .simple_trade_beep import SimpleTradeBeep
 from .simple_trade_helper import *
 from .simple_trade_handler import SimpleTradeHandler
+from .simple_trade_strategy import SimpleTradeStrategy
+from .simple_trade_price_strategy import SimpleTradePriceStrategy
