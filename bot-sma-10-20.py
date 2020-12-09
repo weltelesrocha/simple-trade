@@ -8,8 +8,8 @@ import math
 
 MARKET = 'BTCUSDT'
 ASSET = 'USDT'
-API_KEY = 'zTli0qrCrzcxmmuT5zJNNt7n1LBDqbkmBF3oXFvGysfCqpYAB7E2o2ybgawYRdeu'
-API_SECRET = 'eS63dbBsiJuo02eJgdjE4HaNw4fWuqTJ5K5pXJVtVUBDg9jCLEeB2WjLW1terSUX'
+API_KEY = ''
+API_SECRET = ''
 AMOUNT = 10
 AMOUNT_NOW = AMOUNT
 LOSE = 0
@@ -66,7 +66,10 @@ class BinanceClient(Client):
 
 
 client = BinanceClient(API_KEY, API_SECRET)
+print(client.futures_account_trades(symbol=MARKET)[-1])
 
+
+# sys.exit()
 
 def round_decimals_down(number: float, decimals: int = 2):
     """

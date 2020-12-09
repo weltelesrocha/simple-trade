@@ -5,6 +5,7 @@ from .simple_trade_helper import isset
 class SimpleTradeInterval:
     __INTERVAL = {
         BinanceClient.KLINE_INTERVAL_1SECOND: {'second': 1},
+        BinanceClient.KLINE_INTERVAL_10SECOND: {'second': 10},
         BinanceClient.KLINE_INTERVAL_1MINUTE: {'minute': 1},
         BinanceClient.KLINE_INTERVAL_5MINUTE: {'minute': 5},
         BinanceClient.KLINE_INTERVAL_15MINUTE: {'minute': 15},

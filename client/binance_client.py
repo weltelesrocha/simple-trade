@@ -4,6 +4,7 @@ from decimal import Decimal
 
 class BinanceClient(Client):
     KLINE_INTERVAL_1SECOND = '1s'
+    KLINE_INTERVAL_10SECOND = '10s'
     ORDER_TYPE_TAKE_PROFIT_MARKET = 'TAKE_PROFIT_MARKET'
     FUTURES_API_VERSION_V2 = 'v2'
 

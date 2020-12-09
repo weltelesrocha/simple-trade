@@ -1,2 +1,2 @@
 class BinanceMarket:
-    BTC_USDT = 'BTCSDT'
+    BTC_USDT = 'BTCUSDT'

@@ -3,7 +3,10 @@ from .simple_trade_interval import SimpleTradeInterval
 from .simple_trade_database import SimpleTradeDatabase
 from .simple_trade_log import SimpleTradeLog
 from .simple_trade_config import SimpleTradeConfig
+from .simple_trade_helper import isset, round_decimals_down
+from .simple_trade_result import SimpleTradeResult
 from client.binance_client import BinanceClient
+import traceback
 import sys
 import time
 import datetime
@@ -41,9 +44,11 @@ class SimpleTradeHandler:
         self.candles = []
         self.position = {}
         self.close = []
+        self.trades = []
         self.amount = simple_trade_config.amount
         self.amount_now = self.amount
         self.lose = 0
+        self.price = 0
 
     def balance_futures(self):
         balance = self.client.futures_account_balance()
@@ -96,23 +101,88 @@ class SimpleTradeHandler:
         for row in self.candles:
             close.append(float(row[4]))
         self.close = np.array(close)
+        self.price = self.close[-1]
         self.log.silly('Updated Candles')
 
+    def delta_leverage(self):
+        return (self.config.leverage / self.config.distance) / 100
+
+    def delta_quantity(self):
+        ticker = self.client.futures_ticker(symbol=self.config.market)
+        return round_decimals_down((self.amount_now / float(ticker['lastPrice'])) * self.delta_leverage(), 3)
+
+    def delta_price_take_profit(self, side: str, price: float):
+        if side == SimpleTradeSide.BUY:
+            return round(price * (1 + self.config.distance), 2)
+        return round(price * (1 - self.config.distance), 2)
+
+    def create_order(self, side: str, quantity: float):
+        return self.client.futures_create_order(symbol=self.config.market,
+                                                side=side,
+                                                type=BinanceClient.ORDER_TYPE_MARKET,
+                                                quantity=quantity)
+
+    def create_order_take_profit(self, side: str, quantity: float, stop_price: float):
+        sideTakeProfit = SimpleTradeSide.BUY
+        if side == SimpleTradeSide.BUY:
+            sideTakeProfit = SimpleTradeSide.SELL
+        return self.client.futures_create_order(symbol=self.config.market,
+                                                side=sideTakeProfit,
+                                                type=BinanceClient.ORDER_TYPE_TAKE_PROFIT_MARKET,
+                                                quantity=quantity,
+                                                stopPrice=stop_price)
+
     def update_position(self):
-        pass
+        if self.has_created_position():
+            self.log.silly('Position updated')
+            self.position['closed'] = True
+            position = self.client.futures_position_information(symbol=self.config.market)
+            if float(position[0]['entryPrice']) > 0:
+                self.position['closed'] = False
+                self.position['entry_price'] = float(position[0]['entryPrice'])
+                self.position['last_price'] = float(position[0]['markPrice'])
+                self.position['liquidation_price'] = float(position[0]['liquidationPrice'])
 
     def notification(self):
-        if self.position is None:
-            self.log.info('')
+        if self.has_created_position():
+            self.log.info('POSITION entry price is {}, amount {}, side {}'.format(
+                "{:.2f}".format(self.position['entry_price']),
+                "{:.2f}".format(self.position['amount']),
+                self.position['side']
+            ))
+
+    def take_profit_strategy(self, side: str, entry_price: float, quantity: float):
+        price_take_profit = self.delta_price_take_profit(side, entry_price)
+        self.create_order_take_profit(side, quantity, price_take_profit)
 
     def create_position(self, side: str = None):
         entry_price = self.last_price()
-        self.log.info(
-            'Creating {} position input value at {} quantity {}, market is {}'.format(side, entry_price, self.amount_now, self.config.market))
-        pass
+        if self.has_created_position():
+            self.log.info('Most uncreated available position')
+            return
+        self.log.info('Creating {} position input value at {} quantity {}, market is {}'.format(
+            side,
+            "{:.2f}".format(entry_price),
+            "{:.2f}".format(self.amount_now),
+            self.config.market
+        ))
+        quantity = self.delta_quantity()
+        order = self.create_order(side, quantity)
+        self.take_profit_strategy(side, entry_price, quantity)
+        self.position = {
+            'closed': False,
+            'order_id': order['orderId'],
+            'entry_price': entry_price,
+            'date_open': datetime.datetime.now(),
+            'amount': self.amount_now,
+            'side': side
+        }
+
+    def has_created_position(self):
+        return isset(self.position, 'side')
 
     def last_price(self):
-        return self.close[-1]
+        return float(self.price)
 
     def buy(self):
         self.create_position(SimpleTradeSide.BUY)
@@ -130,26 +200,49 @@ class SimpleTradeHandler:
         self.lose = 0
         self.amount_now = self.amount
 
+    def close_position(self):
+        trades = self.client.futures_account_trades(symbol=self.config.market)
+        last_trade = trades[-1]
+        trade = {
+            'order_id': self.position['order_id'],
+            'side': self.position['side'],
+            'open': self.position['entry_price'],
+            'close': float(last_trade['price']),
+            'date_open': self.position['date_open'],
+            'date_close': datetime.datetime.now(),
+            'amount': self.position['amount'],
+            'result': SimpleTradeResult.WIN
+        }
+        if float(last_trade['realizedPnl']) < 0:
+            trade['result'] = SimpleTradeResult.LOSS
+        self.trades.append(trade)
+        self.position = {}
+
     def listener(self):
-        while True:
-            now = datetime.datetime.now()
-            if self.interval_check_position.is_update(now):
-                self.update_position()
-                # self.strategy.on_close_position()
+        try:
+            while True:
+                now = datetime.datetime.now()
+                if self.interval_check_position.is_update(now):
+                    self.update_position()
+                    if self.has_created_position() and self.position['closed']:
+                        self.close_position()
+                        self.strategy.on_close_position()
+                        self.check_balance_futures(self.amount_now)
 
-            if self.interval_candle.is_update(now):
-                self.update_candle()
-                self.strategy.on_candle_update()
+                if self.interval_candle.is_update(now):
+                    self.update_candle()
+                    self.strategy.on_candle_update()
 
-            if self.interval_log.is_update(now):
-                self.notification()
-            time.sleep(1)
+                if self.interval_log.is_update(now):
+                    self.notification()
+                time.sleep(1)
+        except:
+            traceback.print_exc()
 
     def stop(self):
         sys.exit()
 
     def start(self):
         self.log.info('Simple trade bot start')
-        # self.check_balance_futures()
+        self.check_balance_futures()
         self.listener()
-        pass

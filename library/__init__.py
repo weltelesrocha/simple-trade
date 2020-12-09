@@ -8,4 +8,5 @@ from .simple_trade_beep import SimpleTradeBeep
 from .simple_trade_helper import *
 from .simple_trade_handler import SimpleTradeHandler
 from .simple_trade_strategy import SimpleTradeStrategy
+from .simple_trade_result import SimpleTradeResult
 from .simple_trade_price_strategy import SimpleTradePriceStrategy
