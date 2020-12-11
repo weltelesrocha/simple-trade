@@ -1,1 +1,2 @@
 from .strategy_sma_10_20 import StrategySMA1020
+from .strategy_sma_10_20_mgi import StrategySMA1020MGI

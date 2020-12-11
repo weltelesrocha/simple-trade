@@ -9,14 +9,14 @@ class SimpleTradeConfig:
             api_key=None,
             api_secret=None,
             amount=1,
-            distance=0.003,
-            leverage=30,
+            distance=0.01,
+            leverage=100,
             database_host: str = None,
             log_level=SimpleTradeLog.LEVEL_SILLY,
             market=BinanceMarket.BTC_USDT,
             asset=SimpleTradeAsset.USDT,
             interval_log=BinanceClient.KLINE_INTERVAL_1SECOND,
-            interval_candle=BinanceClient.KLINE_INTERVAL_1MINUTE,
+            interval_candle=BinanceClient.KLINE_INTERVAL_30MINUTE,
             interval_check_position=BinanceClient.KLINE_INTERVAL_10SECOND,
     ):
         self.api_key = api_key
