@@ -88,9 +88,9 @@ class SimpleTradeHandler:
         self.log.silly('Check balance futures')
         self.balance = self.balance_futures()
         self.log.silly('Load balance futures')
-        if self.balance > amount:
+        if round_decimals_down(self.balance) > round_decimals_down(amount):
             return self.if_the_balance_is_bigger(amount)
-        if amount > self.balance:
+        if round_decimals_down(amount) > round_decimals_down(self.balance):
             return self.if_the_balance_is_smaller(amount)
 
     def update_candle(self):
@@ -219,8 +219,8 @@ class SimpleTradeHandler:
         self.position = {}
 
     def listener(self):
-        try:
-            while True:
+        while True:
+            try:
                 now = datetime.datetime.now()
                 if self.interval_check_position.is_update(now):
                     self.update_position()
@@ -236,8 +236,9 @@ class SimpleTradeHandler:
                 if self.interval_log.is_update(now):
                     self.notification()
                 time.sleep(1)
-        except:
-            traceback.print_exc()
+            except:
+                traceback.print_exc()
+                time.sleep(10)
 
     def stop(self):
         sys.exit()
