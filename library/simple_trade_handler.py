@@ -49,6 +49,7 @@ class SimpleTradeHandler:
         self.amount_now = self.amount
         self.lose = 0
         self.price = 0
+        self.tick_price = 0.01
 
     def balance_futures(self):
         balance = self.client.futures_account_balance()
@@ -109,7 +110,8 @@ class SimpleTradeHandler:
 
     def delta_quantity(self):
         ticker = self.client.futures_ticker(symbol=self.config.market)
-        return round_decimals_down((self.amount_now / float(ticker['lastPrice'])) * self.delta_leverage(), 3)
+        quantity = (self.amount_now / float(ticker['lastPrice'])) * self.delta_leverage()
+        return round_decimals_down((quantity - (quantity * self.tick_price)), 3)
 
     def delta_price_take_profit(self, side: str, price: float):
         if side == SimpleTradeSide.BUY:
