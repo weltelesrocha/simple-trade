@@ -115,8 +115,8 @@ class SimpleTradeHandler:
 
     def delta_price_take_profit(self, side: str, price: float):
         if side == SimpleTradeSide.BUY:
-            return round(price * (1 + self.config.distance), 2)
-        return round(price * (1 - self.config.distance), 2)
+            return round(price * (1.0005 + self.config.distance), 2)
+        return round(price * (1.0005 - self.config.distance), 2)
 
     def create_order(self, side: str, quantity: float):
         return self.client.futures_create_order(symbol=self.config.market,
